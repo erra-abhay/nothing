@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Browse Papers - PaperVault by BRIKIEN LABS</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/footer.css">
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo"><span class="logo-main">📚 PaperVault</span> <span class="logo-sub">by BRIKIEN LABS</span></a>
+                <nav>
+                    <ul class="nav-links">
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/browse.html">Browse Papers</a></li>
+                        <li><a href="/faculty-login.html">Faculty Login</a></li>
+                        <li><a href="/admin-login.html">Admin</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="container" style="margin-top: 2rem;">
+        <h1>Browse Question Papers</h1>
+
+        <!-- Search Bar -->
+        <div class="search-container" style="max-width: 100%; margin: 2rem 0;">
+            <input type="text" id="searchInput" class="search-input" placeholder="Search by subject or department...">
+            <button class="search-btn" onclick="applyFilters()">Search</button>
+        </div>
+
+        <!-- Filters -->
+        <div class="filters">
+            <div class="filter-group">
+                <label for="departmentFilter">Department</label>
+                <select id="departmentFilter" onchange="loadSubjects(); applyFilters();">
+                    <option value="">All Departments</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="subjectFilter">Subject</label>
+                <select id="subjectFilter" onchange="applyFilters()">
+                    <option value="">All Subjects</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="semesterFilter">Semester</label>
+                <select id="semesterFilter" onchange="applyFilters()">
+                    <option value="">All Semesters</option>
+                    <option value="1">Semester 1</option>
+                    <option value="2">Semester 2</option>
+                    <option value="3">Semester 3</option>
+                    <option value="4">Semester 4</option>
+                    <option value="5">Semester 5</option>
+                    <option value="6">Semester 6</option>
+                    <option value="7">Semester 7</option>
+                    <option value="8">Semester 8</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="typeFilter">Paper Type</label>
+                <select id="typeFilter" onchange="applyFilters()">
+                    <option value="">All Types</option>
+                    <option value="MSE">MSE</option>
+                    <option value="ESE">ESE</option>
+                    <option value="Quiz">Quiz</option>
+                    <option value="Assignment">Assignment</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="yearFilter">Year</label>
+                <select id="yearFilter" onchange="applyFilters()">
+                    <option value="">All Years</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="resultsCount" class="text-muted mb-2"></div>
+        <div id="papersContainer" class="card-grid">
+            <div class="spinner"></div>
+        </div>
+    </main>
+
+    <script src="/js/main.js"></script>
+    <script>
+        let allDepartments = [];
+        let allSubjects = [];
+
+        // Load departments
+        async function loadDepartments() {
+            try {
+                const response = await fetch('/api/public/departments');
+                const result = await response.json();
+
+                if (result.success) {
+                    allDepartments = result.data;
+                    const select = document.getElementById('departmentFilter');
+                    result.data.forEach(dept => {
+                        const option = document.createElement('option');
+                        option.value = dept.id;
+                        option.textContent = dept.name;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading departments:', error);
+            }
+        }
+
+        // Load subjects based on selected department
+        async function loadSubjects() {
+            const deptId = document.getElementById('departmentFilter').value;
+            const subjectSelect = document.getElementById('subjectFilter');
+            subjectSelect.innerHTML = '<option value="">All Subjects</option>';
+
+            try {
+                const url = deptId ? `/api/public/subjects?department=${deptId}` : '/api/public/subjects';
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result.success) {
+                    allSubjects = result.data;
+                    result.data.forEach(subject => {
+                        const option = document.createElement('option');
+                        option.value = subject.id;
+                        option.textContent = `${subject.name} (${subject.code})`;
+                        subjectSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading subjects:', error);
+            }
+        }
+
+        // Populate year filter
+        function populateYearFilter() {
+            const yearSelect = document.getElementById('yearFilter');
+            const currentYear = new Date().getFullYear();
+            for (let year = currentYear; year >= currentYear - 10; year--) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            }
+        }
+
+        // Apply filters and load papers
+        async function applyFilters() {
+            const filters = {
+                department: document.getElementById('departmentFilter').value,
+                subject: document.getElementById('subjectFilter').value,
+                semester: document.getElementById('semesterFilter').value,
+                type: document.getElementById('typeFilter').value,
+                year: document.getElementById('yearFilter').value
+            };
+
+            const searchQuery = document.getElementById('searchInput').value.trim();
+
+            try {
+                let url;
+                if (searchQuery) {
+                    url = `/api/public/search?q=${encodeURIComponent(searchQuery)}`;
+                } else {
+                    const queryString = buildQueryString(filters);
+                    url = `/api/public/papers${queryString ? '?' + queryString : ''}`;
+                }
+
+                const response = await fetch(url);
+                const result = await response.json();
+
+                if (result.success) {
+                    displayPapers(result.data, 'papersContainer');
+                    document.getElementById('resultsCount').textContent =
+                        `Found ${result.data.length} paper${result.data.length !== 1 ? 's' : ''}`;
+                }
+            } catch (error) {
+                console.error('Error loading papers:', error);
+                showError('Failed to load papers');
+            }
+        }
+
+        // Initialize page
+        async function initializePage() {
+            await loadDepartments();
+            await loadSubjects();
+            populateYearFilter();
+
+            // Check for URL parameters
+            const params = getUrlParams();
+            if (params.search) {
+                document.getElementById('searchInput').value = params.search;
+            }
+
+            applyFilters();
+        }
+
+        initializePage();
+    </script>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>📚 PaperVault <span style="font-size: 0.7em; opacity: 0.8;">by BRIKIEN LABS</span></h3>
+                    <p>Advanced Question Paper Repository System</p>
+                    <p>Empowering education through technology and innovation.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/browse.html">Browse Papers</a></li>
+                        <li><a href="/faculty-login.html">Faculty Login</a></li>
+                        <li><a href="/admin-login.html">Admin Panel</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact</h3>
+                    <p>Email: info@brikien.com</p>
+                    <p>Support: support@brikien.com</p>
+                    <p>© 2026 PaperVault by BRIKIEN LABS. All rights reserved.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>Powered by <span class="footer-brand">PaperVault by BRIKIEN LABS</span></p>
+                <div class="footer-links">
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Documentation</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+
+</html>

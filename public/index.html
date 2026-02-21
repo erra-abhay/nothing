@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PaperVault by BRIKIEN LABS - Question Paper Repository</title>
+    <meta name="description"
+        content="PaperVault by BRIKIEN LABS - Browse and download college question papers from various departments and subjects">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/footer.css">
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo"><span class="logo-main">📚 PaperVault</span> <span class="logo-sub">by BRIKIEN
+                        LABS</span></a>
+                <nav>
+                    <ul class="nav-links">
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/browse.html">Browse Papers</a></li>
+                        <li><a href="/faculty-login.html">Faculty Login</a></li>
+                        <li><a href="/admin-login.html">Admin</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <section class="search-section">
+        <div class="container">
+            <h1>Find Your Question Papers</h1>
+            <p>Search through thousands of question papers from all departments</p>
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input"
+                    placeholder="Search by subject name or code (e.g., PPSC, Data Structures)...">
+                <button class="search-btn" onclick="performSearch()">Search</button>
+            </div>
+        </div>
+    </section>
+
+    <main class="container">
+        <!-- Statistics -->
+        <section class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalPapers">0</div>
+                <div class="stat-label">Total Papers</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalSubjects">0</div>
+                <div class="stat-label">Subjects</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalDepartments">0</div>
+                <div class="stat-label">Departments</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalDownloads">0</div>
+                <div class="stat-label">Downloads</div>
+            </div>
+        </section>
+
+        <!-- Most Downloaded Papers -->
+        <section class="mt-4">
+            <h2>🔥 Most Downloaded Papers</h2>
+            <div id="mostDownloadedContainer" class="card-grid">
+                <div class="spinner"></div>
+            </div>
+        </section>
+
+        <!-- Recently Uploaded -->
+        <section class="mt-4">
+            <h2>🆕 Recently Uploaded</h2>
+            <div id="recentUploadsContainer" class="card-grid">
+                <div class="spinner"></div>
+            </div>
+        </section>
+
+        <!-- Top Subjects -->
+        <section class="mt-4 mb-4">
+            <h2>📖 Popular Subjects</h2>
+            <div id="topSubjectsContainer" class="card-grid">
+                <div class="spinner"></div>
+            </div>
+        </section>
+    </main>
+
+    <script src="/js/main.js"></script>
+    <script>
+        // Load homepage data
+        async function loadHomepageData() {
+            try {
+                const response = await fetch('/api/public/stats');
+                const result = await response.json();
+
+                if (result.success) {
+                    const { mostDownloaded, recentUploads, topSubjects, counts } = result.data;
+
+                    // Update statistics
+                    document.getElementById('totalPapers').textContent = counts.total_papers || 0;
+                    document.getElementById('totalSubjects').textContent = counts.total_subjects || 0;
+                    document.getElementById('totalDepartments').textContent = counts.total_departments || 0;
+                    document.getElementById('totalDownloads').textContent = counts.total_downloads || 0;
+
+                    // Display most downloaded papers
+                    displayPapers(mostDownloaded, 'mostDownloadedContainer');
+
+                    // Display recent uploads
+                    displayPapers(recentUploads, 'recentUploadsContainer');
+
+                    // Display top subjects
+                    displayTopSubjects(topSubjects);
+                }
+            } catch (error) {
+                console.error('Error loading homepage data:', error);
+                showError('Failed to load data. Please refresh the page.');
+            }
+        }
+
+        function displayTopSubjects(subjects) {
+            const container = document.getElementById('topSubjectsContainer');
+
+            if (!subjects || subjects.length === 0) {
+                container.innerHTML = '<p class="text-muted">No subjects found</p>';
+                return;
+            }
+
+            container.innerHTML = subjects.map(subject => `
+                <div class="card">
+                    <h3>${subject.name}</h3>
+                    <p class="text-muted">${subject.department_name}</p>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-muted">${subject.paper_count || 0} papers</span>
+                        <span class="paper-badge">${subject.total_downloads || 0} downloads</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (query) {
+                window.location.href = `/browse.html?search=${encodeURIComponent(query)}`;
+            }
+        }
+
+        // Allow Enter key to search
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+
+        // Load data on page load
+        loadHomepageData();
+    </script>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>📚 PaperVault <span style="font-size: 0.7em; opacity: 0.8;">by BRIKIEN LABS</span></h3>
+                    <p>Advanced Question Paper Repository System</p>
+                    <p>Empowering education through technology and innovation.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/browse.html">Browse Papers</a></li>
+                        <li><a href="/faculty-login.html">Faculty Login</a></li>
+                        <li><a href="/admin-login.html">Admin Panel</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact</h3>
+                    <p>Email: info@brikien.com</p>
+                    <p>Support: support@brikien.com</p>
+                    <p>© 2026 PaperVault by BRIKIEN LABS. All rights reserved.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>Powered by <span class="footer-brand">PaperVault by BRIKIEN LABS</span></p>
+                <div class="footer-links">
+                    <a href="/privacy-policy.html">Privacy Policy</a>
+                    <a href="/terms-of-service.html">Terms of Service</a>
+                    <a href="/documentation.html">Documentation</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+
+</html>

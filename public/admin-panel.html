@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - PaperVault by BRIKIEN LABS</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/footer.css">
+    <style>
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .tab {
+            padding: 1rem 1.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-bottom: 3px solid transparent;
+            transition: all var(--transition);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo"><span class="logo-main">📚 PaperVault</span> <span class="logo-sub">by BRIKIEN LABS</span></a>
+                <nav>
+                    <ul class="nav-links">
+                        <li><span id="adminName"></span></li>
+                        <li><a href="#" onclick="adminLogout()">Logout</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="container-wide" style="margin-top: 2rem; margin-bottom: 4rem;">
+        <h1>Admin Panel</h1>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('departments')">Departments</button>
+            <button class="tab" onclick="switchTab('subjects')">Subjects</button>
+            <button class="tab" onclick="switchTab('faculty')">Faculty</button>
+            <button class="tab" onclick="switchTab('papers')">Papers</button>
+        </div>
+
+        <!-- Departments Tab -->
+        <div id="departments" class="tab-content active">
+            <div class="flex justify-between items-center mb-3">
+                <h2>Manage Departments</h2>
+                <button class="btn btn-primary" onclick="showAddDepartmentModal()">+ Add Department</button>
+            </div>
+            <div id="departmentsContainer">
+                <div class="spinner"></div>
+            </div>
+        </div>
+
+        <!-- Subjects Tab -->
+        <div id="subjects" class="tab-content">
+            <div class="flex justify-between items-center mb-3">
+                <h2>Manage Subjects</h2>
+                <button class="btn btn-primary" onclick="showAddSubjectModal()">+ Add Subject</button>
+            </div>
+            <div id="subjectsContainer">
+                <div class="spinner"></div>
+            </div>
+        </div>
+
+        <!-- Faculty Tab -->
+        <div id="faculty" class="tab-content">
+            <div class="flex justify-between items-center mb-3">
+                <h2>Manage Faculty</h2>
+                <button class="btn btn-primary" onclick="showAddFacultyModal()">+ Add Faculty</button>
+            </div>
+            <div id="facultyContainer">
+                <div class="spinner"></div>
+            </div>
+        </div>
+
+        <!-- Papers Tab -->
+        <div id="papers" class="tab-content">
+            <h2>All Papers</h2>
+            <div id="papersContainer">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Department Modal -->
+    <div id="departmentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="departmentModalTitle">Add Department</h3>
+                <button class="modal-close" onclick="closeDepartmentModal()">&times;</button>
+            </div>
+            <form id="departmentForm" onsubmit="handleDepartmentSubmit(event)">
+                <input type="hidden" id="deptId">
+                <div class="form-group">
+                    <label for="deptName">Department Name *</label>
+                    <input type="text" id="deptName" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="deptCode">Department Code *</label>
+                    <input type="text" id="deptCode" class="form-control" required>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeDepartmentModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit Subject Modal -->
+    <div id="subjectModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="subjectModalTitle">Add Subject</h3>
+                <button class="modal-close" onclick="closeSubjectModal()">&times;</button>
+            </div>
+            <form id="subjectForm" onsubmit="handleSubjectSubmit(event)">
+                <input type="hidden" id="subjId">
+                <div class="form-group">
+                    <label for="subjName">Subject Name *</label>
+                    <input type="text" id="subjName" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="subjCode">Subject Code *</label>
+                    <input type="text" id="subjCode" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="subjDept">Department *</label>
+                    <select id="subjDept" class="form-control" required>
+                        <option value="">Select Department</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeSubjectModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit Faculty Modal -->
+    <div id="facultyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="facultyModalTitle">Add Faculty</h3>
+                <button class="modal-close" onclick="closeFacultyModal()">&times;</button>
+            </div>
+            <form id="facultyForm" onsubmit="handleFacultySubmit(event)">
+                <input type="hidden" id="facId">
+                <div class="form-group">
+                    <label for="facName">Name *</label>
+                    <input type="text" id="facName" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="facEmail">Email *</label>
+                    <input type="email" id="facEmail" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="facPassword">Password <span id="passwordHint">(leave blank to keep
+                            current)</span></label>
+                    <input type="password" id="facPassword" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="facDept">Department *</label>
+                    <select id="facDept" class="form-control" required>
+                        <option value="">Select Department</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="facActive" checked> Active
+                    </label>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeFacultyModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/session.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/admin.js"></script>
+    <script>
+        // Initialize
+        const token = checkAdminAuth();
+        const admin = getAdminInfo();
+        if (admin) {
+            document.getElementById('adminName').textContent = admin.name;
+        }
+
+        let allDepartments = [];
+
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+
+            // Load data for the tab
+            if (tabName === 'departments') loadDepartments();
+            else if (tabName === 'subjects') loadSubjects();
+            else if (tabName === 'faculty') loadFaculty();
+            else if (tabName === 'papers') loadPapers();
+        }
+
+        // DEPARTMENTS
+        async function loadDepartments() {
+            const response = await adminFetch('/api/admin/departments');
+            if (!response) return;
+
+            const result = await response.json();
+            const container = document.getElementById('departmentsContainer');
+
+            if (result.success) {
+                allDepartments = result.data;
+                populateDepartmentSelects();
+
+                container.innerHTML = `
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Code</th>
+                                    <th>Subjects</th>
+                                    <th>Papers</th>
+                                    <th>Faculty</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${result.data.map(dept => `
+                                    <tr>
+                                        <td><strong>${dept.name}</strong></td>
+                                        <td>${dept.code}</td>
+                                        <td>${dept.subject_count || 0}</td>
+                                        <td>${dept.paper_count || 0}</td>
+                                        <td>${dept.faculty_count || 0}</td>
+                                        <td>
+                                            <button class="btn btn-secondary btn-sm" onclick="editDepartment(${dept.id}, '${dept.name}', '${dept.code}')">Edit</button>
+                                            <button class="btn btn-danger btn-sm" onclick="deleteDepartment(${dept.id})">Delete</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+        }
+
+        function populateDepartmentSelects() {
+            const selects = [document.getElementById('subjDept'), document.getElementById('facDept')];
+            selects.forEach(select => {
+                select.innerHTML = '<option value="">Select Department</option>';
+                allDepartments.forEach(dept => {
+                    const option = document.createElement('option');
+                    option.value = dept.id;
+                    option.textContent = dept.name;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        function showAddDepartmentModal() {
+            document.getElementById('departmentModalTitle').textContent = 'Add Department';
+            document.getElementById('departmentForm').reset();
+            document.getElementById('deptId').value = '';
+            document.getElementById('departmentModal').classList.add('active');
+        }
+
+        function editDepartment(id, name, code) {
+            document.getElementById('departmentModalTitle').textContent = 'Edit Department';
+            document.getElementById('deptId').value = id;
+            document.getElementById('deptName').value = name;
+            document.getElementById('deptCode').value = code;
+            document.getElementById('departmentModal').classList.add('active');
+        }
+
+        function closeDepartmentModal() {
+            document.getElementById('departmentModal').classList.remove('active');
+        }
+
+        async function handleDepartmentSubmit(event) {
+            event.preventDefault();
+            const id = document.getElementById('deptId').value;
+            const data = {
+                name: document.getElementById('deptName').value,
+                code: document.getElementById('deptCode').value
+            };
+
+            const url = id ? `/api/admin/departments/${id}` : '/api/admin/departments';
+            const method = id ? 'PUT' : 'POST';
+
+            const response = await adminFetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (!response) return;
+            const result = await response.json();
+
+            if (result.success) {
+                showSuccess(id ? 'Department updated!' : 'Department created!');
+                closeDepartmentModal();
+                loadDepartments();
+            } else {
+                showError(result.error || 'Operation failed');
+            }
+        }
+
+        async function deleteDepartment(id) {
+            if (!confirm('Delete this department? This will also delete all associated subjects and papers.')) return;
+
+            const response = await adminFetch(`/api/admin/departments/${id}`, { method: 'DELETE' });
+            if (!response) return;
+
+            const result = await response.json();
+            if (result.success) {
+                showSuccess('Department deleted!');
+                loadDepartments();
+            } else {
+                showError(result.error || 'Delete failed');
+            }
+        }
+
+        // SUBJECTS
+        async function loadSubjects() {
+            const response = await adminFetch('/api/admin/subjects');
+            if (!response) return;
+
+            const result = await response.json();
+            const container = document.getElementById('subjectsContainer');
+
+            if (result.success) {
+                container.innerHTML = `
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Subject Name</th>
+                                    <th>Code</th>
+                                    <th>Department</th>
+                                    <th>Papers</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${result.data.map(subj => `
+                                    <tr>
+                                        <td><strong>${subj.name}</strong></td>
+                                        <td>${subj.code}</td>
+                                        <td>${subj.department_name}</td>
+                                        <td>${subj.paper_count || 0}</td>
+                                        <td>
+                                            <button class="btn btn-secondary btn-sm" onclick="editSubject(${subj.id}, '${subj.name}', '${subj.code}', ${subj.department_id})">Edit</button>
+                                            <button class="btn btn-danger btn-sm" onclick="deleteSubject(${subj.id})">Delete</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+        }
+
+        function showAddSubjectModal() {
+            document.getElementById('subjectModalTitle').textContent = 'Add Subject';
+            document.getElementById('subjectForm').reset();
+            document.getElementById('subjId').value = '';
+            document.getElementById('subjectModal').classList.add('active');
+        }
+
+        function editSubject(id, name, code, deptId) {
+            document.getElementById('subjectModalTitle').textContent = 'Edit Subject';
+            document.getElementById('subjId').value = id;
+            document.getElementById('subjName').value = name;
+            document.getElementById('subjCode').value = code;
+            document.getElementById('subjDept').value = deptId;
+            document.getElementById('subjectModal').classList.add('active');
+        }
+
+        function closeSubjectModal() {
+            document.getElementById('subjectModal').classList.remove('active');
+        }
+
+        async function handleSubjectSubmit(event) {
+            event.preventDefault();
+            const id = document.getElementById('subjId').value;
+            const data = {
+                name: document.getElementById('subjName').value,
+                code: document.getElementById('subjCode').value,
+                department_id: document.getElementById('subjDept').value
+            };
+
+            const url = id ? `/api/admin/subjects/${id}` : '/api/admin/subjects';
+            const method = id ? 'PUT' : 'POST';
+
+            const response = await adminFetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (!response) return;
+            const result = await response.json();
+
+            if (result.success) {
+                showSuccess(id ? 'Subject updated!' : 'Subject created!');
+                closeSubjectModal();
+                loadSubjects();
+            } else {
+                showError(result.error || 'Operation failed');
+            }
+        }
+
+        async function deleteSubject(id) {
+            if (!confirm('Delete this subject? This will also delete all associated papers.')) return;
+
+            const response = await adminFetch(`/api/admin/subjects/${id}`, { method: 'DELETE' });
+            if (!response) return;
+
+            const result = await response.json();
+            if (result.success) {
+                showSuccess('Subject deleted!');
+                loadSubjects();
+            } else {
+                showError(result.error || 'Delete failed');
+            }
+        }
+
+        // FACULTY
+        async function loadFaculty() {
+            const response = await adminFetch('/api/admin/faculty');
+            if (!response) return;
+
+            const result = await response.json();
+            const container = document.getElementById('facultyContainer');
+
+            if (result.success) {
+                container.innerHTML = `
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Department</th>
+                                    <th>Papers</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${result.data.map(fac => `
+                                    <tr>
+                                        <td><strong>${fac.name}</strong></td>
+                                        <td>${fac.email}</td>
+                                        <td>${fac.department_name || 'N/A'}</td>
+                                        <td>${fac.paper_count || 0}</td>
+                                        <td><span class="paper-badge">${fac.is_active ? 'Active' : 'Inactive'}</span></td>
+                                        <td>
+                                            <button class="btn btn-secondary btn-sm" onclick='editFaculty(${JSON.stringify(fac)})'>Edit</button>
+                                            <button class="btn btn-danger btn-sm" onclick="deleteFaculty(${fac.id})">Delete</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+        }
+
+        function showAddFacultyModal() {
+            document.getElementById('facultyModalTitle').textContent = 'Add Faculty';
+            document.getElementById('facultyForm').reset();
+            document.getElementById('facId').value = '';
+            document.getElementById('facPassword').required = true;
+            document.getElementById('passwordHint').style.display = 'none';
+            document.getElementById('facultyModal').classList.add('active');
+        }
+
+        function editFaculty(fac) {
+            document.getElementById('facultyModalTitle').textContent = 'Edit Faculty';
+            document.getElementById('facId').value = fac.id;
+            document.getElementById('facName').value = fac.name;
+            document.getElementById('facEmail').value = fac.email;
+            document.getElementById('facDept').value = fac.department_id || '';
+            document.getElementById('facActive').checked = fac.is_active;
+            document.getElementById('facPassword').required = false;
+            document.getElementById('facPassword').value = '';
+            document.getElementById('passwordHint').style.display = 'inline';
+            document.getElementById('facultyModal').classList.add('active');
+        }
+
+        function closeFacultyModal() {
+            document.getElementById('facultyModal').classList.remove('active');
+        }
+
+        async function handleFacultySubmit(event) {
+            event.preventDefault();
+            const id = document.getElementById('facId').value;
+            const data = {
+                name: document.getElementById('facName').value,
+                email: document.getElementById('facEmail').value,
+                department_id: document.getElementById('facDept').value,
+                is_active: document.getElementById('facActive').checked
+            };
+
+            const password = document.getElementById('facPassword').value;
+            if (password) {
+                data.password = password;
+            }
+
+            const url = id ? `/api/admin/faculty/${id}` : '/api/admin/faculty';
+            const method = id ? 'PUT' : 'POST';
+
+            const response = await adminFetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (!response) return;
+            const result = await response.json();
+
+            if (result.success) {
+                showSuccess(id ? 'Faculty updated!' : 'Faculty created!');
+                closeFacultyModal();
+                loadFaculty();
+            } else {
+                showError(result.error || 'Operation failed');
+            }
+        }
+
+        async function deleteFaculty(id) {
+            if (!confirm('Delete this faculty member? This will also delete all their uploaded papers.')) return;
+
+            const response = await adminFetch(`/api/admin/faculty/${id}`, { method: 'DELETE' });
+            if (!response) return;
+
+            const result = await response.json();
+            if (result.success) {
+                showSuccess('Faculty deleted!');
+                loadFaculty();
+            } else {
+                showError(result.error || 'Delete failed');
+            }
+        }
+
+        // PAPERS
+        async function loadPapers() {
+            const response = await adminFetch('/api/admin/papers');
+            if (!response) return;
+
+            const result = await response.json();
+            const container = document.getElementById('papersContainer');
+
+            if (result.success) {
+                container.innerHTML = `
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Subject</th>
+                                    <th>Department</th>
+                                    <th>Sem</th>
+                                    <th>Type</th>
+                                    <th>Year</th>
+                                    <th>Uploaded By</th>
+                                    <th>Downloads</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${result.data.map(paper => `
+                                    <tr>
+                                        <td><strong>${paper.subject_name}</strong></td>
+                                        <td>${paper.department_name}</td>
+                                        <td>${paper.semester}</td>
+                                        <td><span class="paper-badge">${paper.paper_type}</span></td>
+                                        <td>${paper.year}</td>
+                                        <td>${paper.uploaded_by}</td>
+                                        <td>${paper.download_count}</td>
+                                        <td>
+                                            <button class="btn btn-danger btn-sm" onclick="deletePaper(${paper.id})">Delete</button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+        }
+
+        async function deletePaper(id) {
+            if (!confirm('Delete this paper?')) return;
+
+            const response = await adminFetch(`/api/admin/papers/${id}`, { method: 'DELETE' });
+            if (!response) return;
+
+            const result = await response.json();
+            if (result.success) {
+                showSuccess('Paper deleted!');
+                loadPapers();
+            } else {
+                showError(result.error || 'Delete failed');
+            }
+        }
+
+        // Initialize
+        loadDepartments();
+    </script>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>📚 PaperVault <span style="font-size: 0.7em; opacity: 0.8;">by BRIKIEN LABS</span></h3>
+                    <p>Advanced Question Paper Repository System</p>
+                    <p>Empowering education through technology and innovation.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/browse.html">Browse Papers</a></li>
+                        <li><a href="/faculty-login.html">Faculty Login</a></li>
+                        <li><a href="/admin-login.html">Admin Panel</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact</h3>
+                    <p>Email: info@brikien.com</p>
+                    <p>Support: support@brikien.com</p>
+                    <p>© 2026 PaperVault by BRIKIEN LABS. All rights reserved.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>Powered by <span class="footer-brand">PaperVault by BRIKIEN LABS</span></p>
+                <div class="footer-links">
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Documentation</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+
+</html>

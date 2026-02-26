@@ -196,13 +196,24 @@ app.use('/api/auth', authRoutes);
 
 // GET /api/me — backend source of truth for user identity
 const { authenticateToken } = require('./middleware/auth');
-app.get('/api/me', authenticateToken, (req, res) => {
-    res.json({
-        id: req.user.id,
-        email: req.user.email,
-        role: req.user.role,
-        department_id: req.user.department_id
-    });
+app.get('/api/me', authenticateToken, async (req, res) => {
+    try {
+        const [users] = await db.query('SELECT name FROM users WHERE id = ?', [req.user.id]);
+        res.json({
+            id: req.user.id,
+            name: users.length > 0 ? users[0].name : null,
+            email: req.user.email,
+            role: req.user.role,
+            department_id: req.user.department_id
+        });
+    } catch (err) {
+        res.json({
+            id: req.user.id,
+            email: req.user.email,
+            role: req.user.role,
+            department_id: req.user.department_id
+        });
+    }
 });
 
 // Logout route — clears httpOnly auth cookie

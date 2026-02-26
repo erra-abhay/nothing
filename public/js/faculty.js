@@ -17,6 +17,9 @@ async function checkAuth() {
             return false;
         }
         _facultyUser = user;
+        // Display name in navbar
+        const nameEl = document.getElementById('userName');
+        if (nameEl && user.name) nameEl.textContent = `Welcome, ${user.name}`;
         return true;
     } catch (e) {
         window.location.href = '/login.html';

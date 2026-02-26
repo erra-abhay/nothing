@@ -17,6 +17,9 @@ async function checkAdminAuth() {
             return false;
         }
         _adminUser = user;
+        // Display name in navbar
+        const nameEl = document.getElementById('adminName');
+        if (nameEl && user.name) nameEl.textContent = `Welcome, ${user.name}`;
         return true;
     } catch (e) {
         window.location.href = '/login.html';

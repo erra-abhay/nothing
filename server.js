@@ -187,11 +187,13 @@ app.use('/uploads', (req, res, next) => {
 const publicRoutes = require('./routes/public');
 const facultyRoutes = require('./routes/faculty');
 const adminRoutes = require('./routes/admin');
+const authRoutes = require('./routes/auth');
 
 // Use routes
 app.use('/api/public', publicRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/auth', authRoutes);
 
 // Health check endpoint for Docker
 app.get('/health', (req, res) => {

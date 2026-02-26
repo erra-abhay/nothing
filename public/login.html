@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - PaperVault by BRIKIEN LABS</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/footer.css">
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <a href="/" class="logo"><span class="logo-main">PaperVault</span> <span class="logo-sub">by BRIKIEN
+                        LABS</span></a>
+                <nav>
+                    <ul class="nav-links">
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/browse.html">Browse Papers</a></li>
+                        <li><a href="/login.html">Login</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="container" style="margin-top: 4rem; margin-bottom: 4rem;">
+        <div style="max-width: 450px; margin: 0 auto;">
+            <div class="card" style="padding: 2.5rem;">
+                <h1 class="text-center mb-3">Login</h1>
+                <p class="text-center text-muted mb-4">Sign in to access your portal</p>
+
+                <div id="errorMessage" class="hidden"></div>
+
+                <form id="loginForm" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" id="email" class="form-control" required placeholder="Enter your email">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" class="form-control" required
+                            placeholder="Enter your password">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;" id="loginBtn">
+                        Sign In
+                    </button>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/session.js"></script>
+    <script>
+        // Check if already logged in
+        if (localStorage.getItem('adminToken')) {
+            window.location.href = '/admin-panel.html';
+        } else if (localStorage.getItem('facultyToken')) {
+            window.location.href = '/faculty-portal.html';
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const errorDiv = document.getElementById('errorMessage');
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Signing in...';
+            errorDiv.classList.add('hidden');
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    initSessionManagement(result.expiresIn || 1800);
+
+                    if (result.role === 'admin') {
+                        localStorage.setItem('adminToken', result.token);
+                        localStorage.setItem('adminUser', JSON.stringify(result.user));
+                        window.location.href = '/admin-panel.html';
+                    } else if (result.role === 'faculty') {
+                        localStorage.setItem('facultyToken', result.token);
+                        localStorage.setItem('facultyUser', JSON.stringify(result.user));
+                        window.location.href = '/faculty-portal.html';
+                    }
+                } else {
+                    errorDiv.textContent = result.error || 'Login failed';
+                    errorDiv.className = 'alert alert-error';
+                    errorDiv.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorDiv.textContent = 'An error occurred. Please try again.';
+                errorDiv.className = 'alert alert-error';
+                errorDiv.classList.remove('hidden');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Sign In';
+            }
+        }
+    </script>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>PaperVault <span style="font-size: 0.7em; opacity: 0.8;">by BRIKIEN LABS</span></h3>
+                    <p>Advanced Question Paper Repository System</p>
+                    <p>Empowering education through technology and innovation.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <ul>
+                        <li><a href="/">Home</a></li>
+                        <li><a href="/browse.html">Browse Papers</a></li>
+                        <li><a href="/login.html">Login</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact</h3>
+                    <p>Email: info@brikien.com</p>
+                    <p>Support: support@brikien.com</p>
+                    <p>&copy; 2026 PaperVault by BRIKIEN LABS. All rights reserved.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>Powered by <span class="footer-brand">PaperVault by BRIKIEN LABS</span></p>
+                <div class="footer-links">
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Documentation</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+
+</html>

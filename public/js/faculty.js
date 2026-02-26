@@ -4,7 +4,7 @@
 function checkAuth() {
     const token = localStorage.getItem('facultyToken');
     if (!token) {
-        window.location.href = '/faculty-login.html';
+        window.location.href = '/login.html';
         return null;
     }
     return token;
@@ -20,7 +20,7 @@ function getUserInfo() {
 function logout() {
     localStorage.removeItem('facultyToken');
     localStorage.removeItem('facultyUser');
-    window.location.href = '/faculty-login.html';
+    window.location.href = '/login.html';
 }
 
 // API call with authentication

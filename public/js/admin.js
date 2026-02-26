@@ -4,7 +4,7 @@
 function checkAdminAuth() {
     const token = localStorage.getItem('adminToken');
     if (!token) {
-        window.location.href = '/admin-login.html';
+        window.location.href = '/login.html';
         return null;
     }
     return token;
@@ -20,7 +20,7 @@ function getAdminInfo() {
 function adminLogout() {
     localStorage.removeItem('adminToken');
     localStorage.removeItem('adminUser');
-    window.location.href = '/admin-login.html';
+    window.location.href = '/login.html';
 }
 
 // API call with authentication

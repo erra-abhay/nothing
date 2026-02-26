@@ -59,9 +59,17 @@ router.post('/login', validateLogin, async (req, res) => {
         // Track successful login
         trackLoginAttempt(email, true, ip, { role: user.role, userId: user.id });
 
+        // Set JWT as httpOnly cookie — invisible to JavaScript
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.COOKIE_SECURE === 'true',
+            sameSite: 'strict',
+            maxAge: 30 * 60 * 1000,
+            path: '/'
+        });
+
         res.json({
             success: true,
-            token,
             role: user.role,
             user: {
                 id: user.id,

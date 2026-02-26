@@ -1,10 +1,10 @@
-// Login page script - extracted from inline for CSP compliance
+// Login page script — extracted from inline for CSP compliance
 (function () {
-    // Check if already logged in
-    if (localStorage.getItem('adminToken')) {
+    // Check if already logged in (user profile in localStorage, token in httpOnly cookie)
+    if (localStorage.getItem('adminUser')) {
         window.location.href = '/admin-panel.html';
         return;
-    } else if (localStorage.getItem('facultyToken')) {
+    } else if (localStorage.getItem('facultyUser')) {
         window.location.href = '/faculty-portal.html';
         return;
     }
@@ -24,9 +24,8 @@
         try {
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
                 body: JSON.stringify({ email, password })
             });
 
@@ -36,11 +35,9 @@
                 initSessionManagement(result.expiresIn || 1800);
 
                 if (result.role === 'admin') {
-                    localStorage.setItem('adminToken', result.token);
                     localStorage.setItem('adminUser', JSON.stringify(result.user));
                     window.location.href = '/admin-panel.html';
                 } else if (result.role === 'faculty') {
-                    localStorage.setItem('facultyToken', result.token);
                     localStorage.setItem('facultyUser', JSON.stringify(result.user));
                     window.location.href = '/faculty-portal.html';
                 }
@@ -60,6 +57,5 @@
         }
     }
 
-    // Bind form submit
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
 })();

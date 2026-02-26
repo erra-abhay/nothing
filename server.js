@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 const { logRequest, logSecurityEvent, EventTypes } = require('./middleware/securityLogger');
@@ -57,14 +58,14 @@ const corsOptions = {
     credentials: true,
     optionsSuccessStatus: 200,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    exposedHeaders: ['X-Refreshed-Token']
+    allowedHeaders: ['Content-Type']
 };
 app.use(cors(corsOptions));
 
 // Body parsing with size limits
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(cookieParser());
 
 // NoSQL Injection Prevention
 app.use(mongoSanitize({
@@ -192,6 +193,17 @@ app.use('/api/public', publicRoutes);
 app.use('/api/faculty', facultyRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/auth', authRoutes);
+
+// Logout route — clears httpOnly auth cookie
+app.post('/api/auth/logout', (req, res) => {
+    res.clearCookie('token', {
+        httpOnly: true,
+        secure: process.env.COOKIE_SECURE === 'true',
+        sameSite: 'strict',
+        path: '/'
+    });
+    res.json({ success: true, message: 'Logged out successfully' });
+});
 
 // Health check endpoint for Docker
 app.get('/health', (req, res) => {

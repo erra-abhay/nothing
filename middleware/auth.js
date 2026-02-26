@@ -14,8 +14,8 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'your_jwt_secret_key_c
 
 // Middleware to verify JWT token and session
 const authenticateToken = async (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    // Read JWT from httpOnly cookie first, fallback to Authorization header
+    const token = req.cookies?.token || (req.headers['authorization'] && req.headers['authorization'].split(' ')[1]);
 
     if (!token) {
         logSecurityEvent(EventTypes.UNAUTHORIZED_ACCESS, {
@@ -120,13 +120,19 @@ const authenticateToken = async (req, res, next) => {
                 );
             }
 
-            // Generate a refreshed JWT token so session doesn't hard-expire
+            // Refresh JWT via httpOnly cookie
             const refreshedToken = jwt.sign(
                 { id: user.id, email: user.email, role: user.role, department_id: user.department_id, sessionToken: user.sessionToken },
                 process.env.JWT_SECRET,
                 { expiresIn: '30m' }
             );
-            res.setHeader('X-Refreshed-Token', refreshedToken);
+            res.cookie('token', refreshedToken, {
+                httpOnly: true,
+                secure: process.env.COOKIE_SECURE === 'true',
+                sameSite: 'strict',
+                maxAge: 30 * 60 * 1000,
+                path: '/'
+            });
 
             // Use DB-sourced user data (not JWT claims) to prevent privilege escalation
             req.user = {

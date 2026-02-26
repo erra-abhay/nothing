@@ -1,13 +1,13 @@
 // Faculty Portal JavaScript
 
-// Check authentication
+// Check authentication — user profile indicates logged-in state (token in httpOnly cookie)
 function checkAuth() {
-    const token = localStorage.getItem('facultyToken');
-    if (!token) {
+    const userStr = localStorage.getItem('facultyUser');
+    if (!userStr) {
         window.location.href = '/login.html';
-        return null;
+        return false;
     }
-    return token;
+    return true;
 }
 
 // Get user info
@@ -16,24 +16,25 @@ function getUserInfo() {
     return userStr ? JSON.parse(userStr) : null;
 }
 
-// Logout
-function logout() {
-    localStorage.removeItem('facultyToken');
+// Logout — clear cookie via server + clear localStorage
+async function logout() {
+    try {
+        await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    } catch (e) { /* ignore */ }
     localStorage.removeItem('facultyUser');
+    localStorage.removeItem('sessionExpiry');
     window.location.href = '/login.html';
 }
 
-// API call with authentication
+// API call with authentication (cookie sent automatically)
 async function authenticatedFetch(url, options = {}) {
-    const token = checkAuth();
-    if (!token) return null;
+    if (!checkAuth()) return null;
 
-    const headers = {
-        'Authorization': `Bearer ${token}`,
-        ...options.headers
-    };
-
-    const response = await fetch(url, { ...options, headers });
+    const response = await fetch(url, {
+        ...options,
+        credentials: 'include',
+        headers: { ...options.headers }
+    });
 
     if (response.status === 401 || response.status === 403) {
         const data = await response.json().catch(() => ({}));
@@ -44,13 +45,6 @@ async function authenticatedFetch(url, options = {}) {
         return null;
     }
 
-    // Pick up refreshed JWT token from server
-    const refreshedToken = response.headers.get('X-Refreshed-Token');
-    if (refreshedToken) {
-        localStorage.setItem('facultyToken', refreshedToken);
-        // Also extend session expiry
-        if (typeof extendSession === 'function') extendSession();
-    }
-
+    if (typeof extendSession === 'function') extendSession();
     return response;
 }

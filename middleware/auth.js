@@ -4,12 +4,12 @@ const { validateSession } = require('./sessionSecurity');
 const { logSecurityEvent, EventTypes } = require('./securityLogger');
 require('dotenv').config();
 
-// Session timeout in milliseconds (30 minutes)
-const SESSION_TIMEOUT = 30 * 60 * 1000;
+// Session timeout in seconds (30 minutes)
+const SESSION_TIMEOUT_SECONDS = 30 * 60;
 
 // Ensure JWT secret is set
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'your_jwt_secret_key_change_this_in_production') {
-    console.warn('⚠️  WARNING: Using default JWT secret. Please change JWT_SECRET in .env file for production!');
+    console.warn('WARNING: Using default JWT secret. Please change JWT_SECRET in .env file for production!');
 }
 
 // Middleware to verify JWT token and session
@@ -79,10 +79,12 @@ const authenticateToken = async (req, res, next) => {
                 });
             }
 
-            // Check session timeout (30 minutes)
+            // Check session timeout using UNIX_TIMESTAMP for timezone-safe comparison
             if (dbUser.session_created_at) {
-                const sessionAge = Date.now() - new Date(dbUser.session_created_at).getTime();
-                if (sessionAge > SESSION_TIMEOUT) {
+                const nowUnix = Math.floor(Date.now() / 1000);
+                const sessionCreatedUnix = Math.floor(new Date(dbUser.session_created_at + ' UTC').getTime() / 1000);
+                const sessionAge = nowUnix - sessionCreatedUnix;
+                if (sessionAge > SESSION_TIMEOUT_SECONDS) {
                     // Clear session
                     await db.query(
                         'UPDATE users SET session_token = NULL, session_created_at = NULL WHERE id = ?',
@@ -92,7 +94,7 @@ const authenticateToken = async (req, res, next) => {
                     logSecurityEvent(EventTypes.SESSION_EXPIRED, {
                         userId: user.id,
                         ip: req.ip,
-                        sessionAge: Math.floor(sessionAge / 1000 / 60) + ' minutes'
+                        sessionAge: Math.floor(sessionAge / 60) + ' minutes'
                     });
 
                     return res.status(401).json({
@@ -103,10 +105,18 @@ const authenticateToken = async (req, res, next) => {
 
                 // Update session timestamp to extend session
                 await db.query(
-                    'UPDATE users SET session_created_at = NOW() WHERE id = ?',
+                    'UPDATE users SET session_created_at = UTC_TIMESTAMP() WHERE id = ?',
                     [user.id]
                 );
             }
+
+            // Generate a refreshed JWT token so session doesn't hard-expire
+            const refreshedToken = jwt.sign(
+                { id: user.id, email: user.email, role: user.role, department_id: user.department_id, sessionToken: user.sessionToken },
+                process.env.JWT_SECRET,
+                { expiresIn: '30m' }
+            );
+            res.setHeader('X-Refreshed-Token', refreshedToken);
 
             // Add user info to request
             req.user = user;

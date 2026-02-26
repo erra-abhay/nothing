@@ -36,8 +36,20 @@ async function adminFetch(url, options = {}) {
     const response = await fetch(url, { ...options, headers });
 
     if (response.status === 401 || response.status === 403) {
+        const data = await response.json().catch(() => ({}));
+        if (data.expired || data.loggedOutFromOtherDevice) {
+            if (typeof handleSessionError === 'function') handleSessionError(data);
+        }
         adminLogout();
         return null;
+    }
+
+    // Pick up refreshed JWT token from server
+    const refreshedToken = response.headers.get('X-Refreshed-Token');
+    if (refreshedToken) {
+        localStorage.setItem('adminToken', refreshedToken);
+        // Also extend session expiry
+        if (typeof extendSession === 'function') extendSession();
     }
 
     return response;

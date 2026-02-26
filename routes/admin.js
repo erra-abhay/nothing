@@ -48,7 +48,7 @@ router.post('/login', validateLogin, async (req, res) => {
 
         // Update user's session token (this will invalidate any previous sessions)
         await db.query(
-            'UPDATE users SET session_token = ?, session_created_at = NOW() WHERE id = ?',
+            'UPDATE users SET session_token = ?, session_created_at = UTC_TIMESTAMP() WHERE id = ?',
             [sessionToken, user.id]
         );
 

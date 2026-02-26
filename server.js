@@ -8,6 +8,7 @@ const hpp = require('hpp');
 require('dotenv').config();
 
 const { logRequest, logSecurityEvent, EventTypes } = require('./middleware/securityLogger');
+const db = require('./config/database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -55,7 +56,8 @@ const corsOptions = {
     credentials: true,
     optionsSuccessStatus: 200,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['X-Refreshed-Token']
 };
 app.use(cors(corsOptions));
 
@@ -284,21 +286,40 @@ app.use((req, res) => {
 
 // Start server
 const server = app.listen(PORT, () => {
-    console.log(`\n🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📚 Question Paper Repository System`);
+    console.log(`\nServer running on http://localhost:${PORT}`);
+    console.log(`Question Paper Repository System`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🔒 Security: Enhanced with Helmet, Rate Limiting, and Advanced Protection`);
-    console.log(`📄 Allowed file types: PDF, DOCX`);
-    console.log(`🛡️  Security Features:`);
-    console.log(`   ✓ Helmet.js security headers`);
-    console.log(`   ✓ Advanced rate limiting (Global, API, Login, Download)`);
-    console.log(`   ✓ NoSQL injection prevention`);
-    console.log(`   ✓ HTTP Parameter Pollution protection`);
-    console.log(`   ✓ File magic number validation`);
-    console.log(`   ✓ Comprehensive security logging`);
-    console.log(`   ✓ Session security with device fingerprinting`);
-    console.log(`   ✓ Brute force protection\n`);
+    console.log(`Security: Enhanced with Helmet, Rate Limiting, and Advanced Protection`);
+    console.log(`Allowed file types: PDF, DOCX`);
+    console.log(`Security Features:`);
+    console.log(`   - Helmet.js security headers`);
+    console.log(`   - Advanced rate limiting (Global, API, Login, Download)`);
+    console.log(`   - NoSQL injection prevention`);
+    console.log(`   - HTTP Parameter Pollution protection`);
+    console.log(`   - File magic number validation`);
+    console.log(`   - Comprehensive security logging`);
+    console.log(`   - Session security with device fingerprinting`);
+    console.log(`   - Brute force protection`);
+    console.log(`   - Auto JWT token refresh on activity`);
+    console.log(`   - Background stale session cleanup (every 5 min)\n`);
 });
+
+// Background job: Clean up stale sessions from DB every 5 minutes
+setInterval(async () => {
+    try {
+        const [result] = await db.query(
+            `UPDATE users SET session_token = NULL, session_created_at = NULL 
+             WHERE session_created_at IS NOT NULL 
+             AND TIMESTAMPDIFF(SECOND, session_created_at, UTC_TIMESTAMP()) > ?`,
+            [30 * 60]
+        );
+        if (result.affectedRows > 0) {
+            console.log(`[Session Cleanup] Cleared ${result.affectedRows} stale session(s)`);
+        }
+    } catch (err) {
+        console.error('[Session Cleanup] Error:', err.message);
+    }
+}, 5 * 60 * 1000);
 
 // Graceful shutdown
 const gracefulShutdown = (signal) => {

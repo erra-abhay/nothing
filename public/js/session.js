@@ -61,7 +61,7 @@ function showSessionWarning(minutesLeft) {
     const warning = document.createElement('div');
     warning.className = 'alert alert-warning session-warning';
     warning.innerHTML = `
-        <span>⚠️ Your session will expire in ${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''}. Any activity will extend your session.</span>
+        <span>Your session will expire in ${minutesLeft} minute${minutesLeft !== 1 ? 's' : ''}. Any activity will extend your session.</span>
         <button onclick="this.parentElement.remove()" style="background: none; border: none; cursor: pointer; font-size: 1.2rem; margin-left: auto;">×</button>
     `;
     warning.style.cssText = 'position: fixed; top: 80px; right: 20px; z-index: 1000; max-width: 400px; display: flex; align-items: center;';

@@ -14,8 +14,8 @@ if (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'your_jwt_secret_key_c
 
 // Middleware to verify JWT token and session
 const authenticateToken = async (req, res, next) => {
-    // Read JWT from httpOnly cookie first, fallback to Authorization header
-    const token = req.cookies?.token || (req.headers['authorization'] && req.headers['authorization'].split(' ')[1]);
+    // Read JWT exclusively from httpOnly cookie — no header fallback
+    const token = req.cookies?.token;
 
     if (!token) {
         logSecurityEvent(EventTypes.UNAUTHORIZED_ACCESS, {
@@ -128,7 +128,7 @@ const authenticateToken = async (req, res, next) => {
             );
             res.cookie('token', refreshedToken, {
                 httpOnly: true,
-                secure: process.env.COOKIE_SECURE === 'true',
+                secure: true,
                 sameSite: 'strict',
                 maxAge: 30 * 60 * 1000,
                 path: '/'

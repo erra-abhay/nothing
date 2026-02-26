@@ -1,5 +1,5 @@
-// Session Management Utility
-// Handles 30-minute session timeout and single-device login enforcement
+// Session Management Utility — in-memory only, zero localStorage
+// Client-side timer is purely UX — backend enforces the actual 30-minute timeout
 
 const SESSION_CHECK_INTERVAL = 60000; // Check every minute
 const SESSION_WARNING_TIME = 5 * 60 * 1000; // Warn 5 minutes before expiry
@@ -11,7 +11,6 @@ function initSessionManagement(expiresIn) {
     if (!expiresIn) expiresIn = 1800; // Default 30 minutes
 
     sessionExpiryTime = Date.now() + (expiresIn * 1000);
-    localStorage.setItem('sessionExpiry', sessionExpiryTime);
 
     // Start session checking
     if (sessionCheckTimer) clearInterval(sessionCheckTimer);
@@ -23,10 +22,9 @@ function initSessionManagement(expiresIn) {
 
 // Check session status
 function checkSession() {
-    const expiry = parseInt(localStorage.getItem('sessionExpiry'));
-    if (!expiry) return;
+    if (!sessionExpiryTime) return;
 
-    const timeLeft = expiry - Date.now();
+    const timeLeft = sessionExpiryTime - Date.now();
 
     // Session expired
     if (timeLeft <= 0) {
@@ -43,7 +41,7 @@ function checkSession() {
 // Handle session expiry
 function handleSessionExpired() {
     if (sessionCheckTimer) clearInterval(sessionCheckTimer);
-    localStorage.removeItem('sessionExpiry');
+    sessionExpiryTime = null;
 
     showError('Your session has expired after 30 minutes of inactivity. Please login again.');
 
@@ -77,13 +75,10 @@ function showSessionWarning(minutesLeft) {
 
 // Extend session on user activity
 function extendSession() {
-    const expiry = parseInt(localStorage.getItem('sessionExpiry'));
-    if (!expiry) return;
+    if (!sessionExpiryTime) return;
 
     // Extend session by 30 minutes from now
-    const newExpiry = Date.now() + (30 * 60 * 1000);
-    localStorage.setItem('sessionExpiry', newExpiry);
-    sessionExpiryTime = newExpiry;
+    sessionExpiryTime = Date.now() + (30 * 60 * 1000);
 }
 
 // Handle API errors related to sessions
@@ -95,7 +90,7 @@ function handleSessionError(error) {
 
     if (error.loggedOutFromOtherDevice) {
         if (sessionCheckTimer) clearInterval(sessionCheckTimer);
-        localStorage.removeItem('sessionExpiry');
+        sessionExpiryTime = null;
         showError(error.error || 'You have been logged out because you logged in from another device.');
 
         setTimeout(() => {
@@ -132,7 +127,7 @@ function setupActivityListeners() {
 // Clean up on logout
 function cleanupSession() {
     if (sessionCheckTimer) clearInterval(sessionCheckTimer);
-    localStorage.removeItem('sessionExpiry');
+    sessionExpiryTime = null;
     document.querySelectorAll('.session-warning').forEach(el => el.remove());
 }
 
@@ -140,12 +135,8 @@ function cleanupSession() {
 if (window.location.pathname.includes('faculty-portal') || window.location.pathname.includes('admin-panel')) {
     setupActivityListeners();
 
-    // Check if session expiry is stored
-    const expiry = parseInt(localStorage.getItem('sessionExpiry'));
-    if (expiry) {
-        const timeLeft = expiry - Date.now();
-        if (timeLeft > 0) {
-            initSessionManagement(Math.floor(timeLeft / 1000));
-        }
+    // Session timer is in-memory only — if page was refreshed, re-init with default
+    if (!sessionExpiryTime) {
+        initSessionManagement(1800);
     }
 }

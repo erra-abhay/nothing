@@ -194,11 +194,22 @@ app.use('/api/faculty', facultyRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/auth', authRoutes);
 
+// GET /api/me — backend source of truth for user identity
+const { authenticateToken } = require('./middleware/auth');
+app.get('/api/me', authenticateToken, (req, res) => {
+    res.json({
+        id: req.user.id,
+        email: req.user.email,
+        role: req.user.role,
+        department_id: req.user.department_id
+    });
+});
+
 // Logout route — clears httpOnly auth cookie
 app.post('/api/auth/logout', (req, res) => {
     res.clearCookie('token', {
         httpOnly: true,
-        secure: process.env.COOKIE_SECURE === 'true',
+        secure: true,
         sameSite: 'strict',
         path: '/'
     });

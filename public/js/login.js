@@ -1,13 +1,21 @@
-// Login page script — extracted from inline for CSP compliance
+// Login page script — zero localStorage, cookie-only auth
 (function () {
-    // Check if already logged in (user profile in localStorage, token in httpOnly cookie)
-    if (localStorage.getItem('adminUser')) {
-        window.location.href = '/admin-panel.html';
-        return;
-    } else if (localStorage.getItem('facultyUser')) {
-        window.location.href = '/faculty-portal.html';
-        return;
+    // Check if already logged in by asking the backend
+    async function checkExistingSession() {
+        try {
+            const res = await fetch('/api/me', { credentials: 'include' });
+            if (res.ok) {
+                const user = await res.json();
+                if (user.role === 'admin') {
+                    window.location.href = '/admin-panel.html';
+                } else if (user.role === 'faculty') {
+                    window.location.href = '/faculty-portal.html';
+                }
+            }
+        } catch (e) { /* not logged in, show form */ }
     }
+
+    checkExistingSession();
 
     async function handleLogin(event) {
         event.preventDefault();
@@ -32,13 +40,16 @@
             const result = await response.json();
 
             if (result.success) {
-                initSessionManagement(result.expiresIn || 1800);
+                // Get identity from backend — single source of truth
+                const meRes = await fetch('/api/me', { credentials: 'include' });
+                if (!meRes.ok) throw new Error('Failed to verify session');
+                const user = await meRes.json();
 
-                if (result.role === 'admin') {
-                    localStorage.setItem('adminUser', JSON.stringify(result.user));
+                initSessionManagement(1800);
+
+                if (user.role === 'admin') {
                     window.location.href = '/admin-panel.html';
-                } else if (result.role === 'faculty') {
-                    localStorage.setItem('facultyUser', JSON.stringify(result.user));
+                } else if (user.role === 'faculty') {
                     window.location.href = '/faculty-portal.html';
                 }
             } else {

@@ -1,35 +1,45 @@
-// Faculty Portal JavaScript
+// Faculty Portal JavaScript — zero localStorage, cookie-only auth
 
-// Check authentication — user profile indicates logged-in state (token in httpOnly cookie)
-function checkAuth() {
-    const userStr = localStorage.getItem('facultyUser');
-    if (!userStr) {
+// In-memory cache (never persisted to localStorage)
+let _facultyUser = null;
+
+// Check authentication via /api/me — backend is source of truth
+async function checkAuth() {
+    try {
+        const res = await fetch('/api/me', { credentials: 'include' });
+        if (!res.ok) {
+            window.location.href = '/login.html';
+            return false;
+        }
+        const user = await res.json();
+        if (user.role !== 'faculty') {
+            window.location.href = '/login.html';
+            return false;
+        }
+        _facultyUser = user;
+        return true;
+    } catch (e) {
         window.location.href = '/login.html';
         return false;
     }
-    return true;
 }
 
-// Get user info
+// Get user info from in-memory cache
 function getUserInfo() {
-    const userStr = localStorage.getItem('facultyUser');
-    return userStr ? JSON.parse(userStr) : null;
+    return _facultyUser;
 }
 
-// Logout — clear cookie via server + clear localStorage
+// Logout — clear cookie via server only
 async function logout() {
     try {
         await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     } catch (e) { /* ignore */ }
-    localStorage.removeItem('facultyUser');
-    localStorage.removeItem('sessionExpiry');
+    _facultyUser = null;
     window.location.href = '/login.html';
 }
 
 // API call with authentication (cookie sent automatically)
 async function authenticatedFetch(url, options = {}) {
-    if (!checkAuth()) return null;
-
     const response = await fetch(url, {
         ...options,
         credentials: 'include',

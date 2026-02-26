@@ -62,23 +62,14 @@ router.post('/login', validateLogin, async (req, res) => {
         // Set JWT as httpOnly cookie — invisible to JavaScript
         res.cookie('token', token, {
             httpOnly: true,
-            secure: process.env.COOKIE_SECURE === 'true',
+            secure: true,
             sameSite: 'strict',
             maxAge: 30 * 60 * 1000,
             path: '/'
         });
 
-        res.json({
-            success: true,
-            role: user.role,
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                department_id: user.department_id
-            },
-            expiresIn: 1800
-        });
+        // Only confirm success — frontend must call /api/me for identity
+        res.json({ success: true });
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({ error: 'Login failed' });

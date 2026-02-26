@@ -1,35 +1,45 @@
-// Admin Panel JavaScript
+// Admin Panel JavaScript — zero localStorage, cookie-only auth
 
-// Check authentication — user profile indicates logged-in state (token in httpOnly cookie)
-function checkAdminAuth() {
-    const userStr = localStorage.getItem('adminUser');
-    if (!userStr) {
+// In-memory cache (never persisted to localStorage)
+let _adminUser = null;
+
+// Check authentication via /api/me — backend is source of truth
+async function checkAdminAuth() {
+    try {
+        const res = await fetch('/api/me', { credentials: 'include' });
+        if (!res.ok) {
+            window.location.href = '/login.html';
+            return false;
+        }
+        const user = await res.json();
+        if (user.role !== 'admin') {
+            window.location.href = '/login.html';
+            return false;
+        }
+        _adminUser = user;
+        return true;
+    } catch (e) {
         window.location.href = '/login.html';
         return false;
     }
-    return true;
 }
 
-// Get admin info
+// Get admin info from in-memory cache
 function getAdminInfo() {
-    const userStr = localStorage.getItem('adminUser');
-    return userStr ? JSON.parse(userStr) : null;
+    return _adminUser;
 }
 
-// Logout — clear cookie via server + clear localStorage
+// Logout — clear cookie via server only
 async function adminLogout() {
     try {
         await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     } catch (e) { /* ignore */ }
-    localStorage.removeItem('adminUser');
-    localStorage.removeItem('sessionExpiry');
+    _adminUser = null;
     window.location.href = '/login.html';
 }
 
 // API call with authentication (cookie sent automatically)
 async function adminFetch(url, options = {}) {
-    if (!checkAdminAuth()) return null;
-
     const response = await fetch(url, {
         ...options,
         credentials: 'include',

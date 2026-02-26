@@ -96,7 +96,13 @@ router.get('/papers/:id/download', validateId, async (req, res) => {
         }
 
         const paper = papers[0];
-        const filePath = path.join(__dirname, '..', paper.file_path);
+        const filePath = path.resolve(__dirname, '..', paper.file_path);
+        const uploadsRoot = path.resolve(__dirname, '..', 'uploads');
+
+        // Path traversal protection
+        if (!filePath.startsWith(uploadsRoot)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
 
         if (!fs.existsSync(filePath)) {
             return res.status(404).json({ error: 'File not found on server' });

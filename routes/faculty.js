@@ -7,78 +7,12 @@ const crypto = require('crypto');
 const { authenticateToken, isFaculty } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 const { verifyFileContent } = require('../middleware/upload');
-const { validateLogin, validatePaperUpload, validatePaperUpdate, validateId } = require('../middleware/validation');
-const { trackLoginAttempt, isAccountLocked, getRemainingLockoutTime, logDataModification } = require('../middleware/securityLogger');
+const { validatePaperUpload, validatePaperUpdate, validateId } = require('../middleware/validation');
+const { logDataModification } = require('../middleware/securityLogger');
 const fs = require('fs');
 const path = require('path');
 
-// Faculty login with brute force protection
-router.post('/login', validateLogin, async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        const ip = req.ip || req.connection.remoteAddress;
-
-        // Check if account is locked
-        if (isAccountLocked(email, ip)) {
-            const remainingTime = getRemainingLockoutTime(email, ip);
-            return res.status(429).json({
-                error: `Account temporarily locked due to too many failed login attempts. Please try again in ${remainingTime} minutes.`,
-                lockedUntil: remainingTime
-            });
-        }
-
-        const [users] = await db.query(
-            'SELECT * FROM users WHERE email = ? AND role = ? AND is_active = TRUE',
-            [email, 'faculty']
-        );
-
-        if (users.length === 0) {
-            trackLoginAttempt(email, false, ip, { role: 'faculty', reason: 'User not found' });
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const user = users[0];
-        const validPassword = await bcrypt.compare(password, user.password);
-
-        if (!validPassword) {
-            trackLoginAttempt(email, false, ip, { role: 'faculty', reason: 'Invalid password' });
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        // Generate unique session token
-        const sessionToken = crypto.randomBytes(32).toString('hex');
-
-        // Update user's session token (this will invalidate any previous sessions)
-        await db.query(
-            'UPDATE users SET session_token = ?, session_created_at = UTC_TIMESTAMP() WHERE id = ?',
-            [sessionToken, user.id]
-        );
-
-        const token = jwt.sign(
-            { id: user.id, email: user.email, role: user.role, department_id: user.department_id, sessionToken: sessionToken },
-            process.env.JWT_SECRET,
-            { expiresIn: '30m' }
-        );
-
-        // Track successful login
-        trackLoginAttempt(email, true, ip, { role: 'faculty', userId: user.id });
-
-        res.json({
-            success: true,
-            token,
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                department_id: user.department_id
-            },
-            expiresIn: 1800
-        });
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ error: 'Login failed' });
-    }
-});
+// Old faculty login removed — use unified /api/auth/login instead
 
 // Get subjects for faculty's department
 router.get('/subjects', authenticateToken, isFaculty, async (req, res) => {
@@ -255,7 +189,13 @@ router.delete('/papers/:id', authenticateToken, isFaculty, validateId, async (re
             return res.status(404).json({ error: 'Paper not found or access denied' });
         }
 
-        const filePath = path.join(__dirname, '..', papers[0].file_path);
+        const filePath = path.resolve(__dirname, '..', papers[0].file_path);
+        const uploadsRoot = path.resolve(__dirname, '..', 'uploads');
+
+        // Path traversal protection
+        if (!filePath.startsWith(uploadsRoot)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
 
         // Delete from database
         await db.query('DELETE FROM papers WHERE id = ?', [req.params.id]);

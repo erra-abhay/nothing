@@ -5,77 +5,12 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { authenticateToken, isAdmin } = require('../middleware/auth');
-const { validateLogin, validateFacultyCreation, validateDepartment, validateSubject, validateId } = require('../middleware/validation');
-const { trackLoginAttempt, isAccountLocked, getRemainingLockoutTime, logDataModification } = require('../middleware/securityLogger');
+const { validateFacultyCreation, validateDepartment, validateSubject, validateId, sanitizeHtml } = require('../middleware/validation');
+const { logDataModification } = require('../middleware/securityLogger');
 const fs = require('fs');
 const path = require('path');
 
-// Admin login with brute force protection
-router.post('/login', validateLogin, async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        const ip = req.ip || req.connection.remoteAddress;
-
-        // Check if account is locked
-        if (isAccountLocked(email, ip)) {
-            const remainingTime = getRemainingLockoutTime(email, ip);
-            return res.status(429).json({
-                error: `Account temporarily locked due to too many failed login attempts. Please try again in ${remainingTime} minutes.`,
-                lockedUntil: remainingTime
-            });
-        }
-
-        const [users] = await db.query(
-            'SELECT * FROM users WHERE email = ? AND role = ? AND is_active = TRUE',
-            [email, 'admin']
-        );
-
-        if (users.length === 0) {
-            trackLoginAttempt(email, false, ip, { role: 'admin', reason: 'User not found' });
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        const user = users[0];
-        const validPassword = await bcrypt.compare(password, user.password);
-
-        if (!validPassword) {
-            trackLoginAttempt(email, false, ip, { role: 'admin', reason: 'Invalid password' });
-            return res.status(401).json({ error: 'Invalid credentials' });
-        }
-
-        // Generate unique session token
-        const sessionToken = crypto.randomBytes(32).toString('hex');
-
-        // Update user's session token (this will invalidate any previous sessions)
-        await db.query(
-            'UPDATE users SET session_token = ?, session_created_at = UTC_TIMESTAMP() WHERE id = ?',
-            [sessionToken, user.id]
-        );
-
-        const token = jwt.sign(
-            { id: user.id, email: user.email, role: user.role, department_id: user.department_id, sessionToken: sessionToken },
-            process.env.JWT_SECRET,
-            { expiresIn: '30m' }
-        );
-
-        // Track successful login
-        trackLoginAttempt(email, true, ip, { role: 'admin', userId: user.id });
-
-        res.json({
-            success: true,
-            token,
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email
-            },
-            expiresIn: 1800
-        });
-    } catch (error) {
-        console.error('Login error:', error);
-        res.status(500).json({ error: 'Login failed' });
-    }
-});
+// Old admin login removed — use unified /api/auth/login instead
 
 // ===== DEPARTMENT MANAGEMENT =====
 
@@ -112,7 +47,7 @@ router.post('/departments', authenticateToken, isAdmin, validateDepartment, asyn
 
         const [result] = await db.query(
             'INSERT INTO departments (name, code) VALUES (?, ?)',
-            [name, code]
+            [sanitizeHtml(name), sanitizeHtml(code)]
         );
 
         res.json({
@@ -131,7 +66,7 @@ router.post('/departments', authenticateToken, isAdmin, validateDepartment, asyn
 });
 
 // Update department
-router.put('/departments/:id', authenticateToken, isAdmin, async (req, res) => {
+router.put('/departments/:id', authenticateToken, isAdmin, validateId, async (req, res) => {
     try {
         const { name, code } = req.body;
 
@@ -140,11 +75,11 @@ router.put('/departments/:id', authenticateToken, isAdmin, async (req, res) => {
 
         if (name) {
             updates.push('name = ?');
-            params.push(name);
+            params.push(sanitizeHtml(name));
         }
         if (code) {
             updates.push('code = ?');
-            params.push(code);
+            params.push(sanitizeHtml(code));
         }
 
         if (updates.length === 0) {
@@ -169,7 +104,7 @@ router.put('/departments/:id', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Delete department
-router.delete('/departments/:id', authenticateToken, isAdmin, async (req, res) => {
+router.delete('/departments/:id', authenticateToken, isAdmin, validateId, async (req, res) => {
     try {
         await db.query('DELETE FROM departments WHERE id = ?', [req.params.id]);
         res.json({ success: true, message: 'Department deleted successfully' });
@@ -227,7 +162,7 @@ router.post('/subjects', authenticateToken, isAdmin, validateSubject, async (req
 });
 
 // Update subject
-router.put('/subjects/:id', authenticateToken, isAdmin, async (req, res) => {
+router.put('/subjects/:id', authenticateToken, isAdmin, validateId, async (req, res) => {
     try {
         const { name, code, department_id } = req.body;
 
@@ -266,7 +201,7 @@ router.put('/subjects/:id', authenticateToken, isAdmin, async (req, res) => {
 });
 
 // Delete subject
-router.delete('/subjects/:id', authenticateToken, isAdmin, async (req, res) => {
+router.delete('/subjects/:id', authenticateToken, isAdmin, validateId, async (req, res) => {
     try {
         await db.query('DELETE FROM subjects WHERE id = ?', [req.params.id]);
         res.json({ success: true, message: 'Subject deleted successfully' });
@@ -312,7 +247,7 @@ router.post('/faculty', authenticateToken, isAdmin, validateFacultyCreation, asy
 
         const [result] = await db.query(
             'INSERT INTO users (name, email, password, role, department_id) VALUES (?, ?, ?, ?, ?)',
-            [name, email, hashedPassword, 'faculty', department_id]
+            [sanitizeHtml(name), email, hashedPassword, 'faculty', department_id]
         );
 
         res.json({
@@ -340,7 +275,7 @@ router.put('/faculty/:id', authenticateToken, isAdmin, async (req, res) => {
 
         if (name) {
             updates.push('name = ?');
-            params.push(name);
+            params.push(sanitizeHtml(name));
         }
         if (email) {
             updates.push('email = ?');
@@ -426,7 +361,13 @@ router.delete('/papers/:id', authenticateToken, isAdmin, async (req, res) => {
             return res.status(404).json({ error: 'Paper not found' });
         }
 
-        const filePath = path.join(__dirname, '..', papers[0].file_path);
+        const filePath = path.resolve(__dirname, '..', papers[0].file_path);
+        const uploadsRoot = path.resolve(__dirname, '..', 'uploads');
+
+        // Path traversal protection
+        if (!filePath.startsWith(uploadsRoot)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
 
         await db.query('DELETE FROM papers WHERE id = ?', [req.params.id]);
 

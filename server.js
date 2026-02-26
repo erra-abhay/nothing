@@ -24,6 +24,7 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
+            // TODO: Remove 'unsafe-inline' after extracting inline scripts from admin-panel.html & faculty-portal.html
             scriptSrc: ["'self'", "'unsafe-inline'"],
             styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
             fontSrc: ["'self'", "https://fonts.gstatic.com"],
@@ -147,6 +148,7 @@ const loginLimiter = rateLimit({
 // Apply login rate limiter to login routes
 app.use('/api/faculty/login', loginLimiter);
 app.use('/api/admin/login', loginLimiter);
+app.use('/api/auth/login', loginLimiter);
 
 // Download rate limiter
 const downloadLimiter = rateLimit({
@@ -170,18 +172,14 @@ app.use(express.static('public', {
     }
 }));
 
-// Serve uploads with authentication check for sensitive files
-app.use('/uploads', (req, res, next) => {
-    // Add logging for file access
-    console.log(`File access: ${req.path} from ${req.ip}`);
-    logSecurityEvent('FILE_ACCESS', {
+// Block direct access to uploads - files served only via /api/public/papers/:id/download
+app.use('/uploads', (req, res) => {
+    logSecurityEvent('FILE_ACCESS_BLOCKED', {
         path: req.path,
         ip: req.ip
     });
-    next();
-}, express.static('uploads', {
-    dotfiles: 'deny'
-}));
+    res.status(403).json({ error: 'Direct file access denied. Use the download API.' });
+});
 
 // Import routes
 const publicRoutes = require('./routes/public');
@@ -197,6 +195,9 @@ app.use('/api/auth', authRoutes);
 
 // Health check endpoint for Docker
 app.get('/health', (req, res) => {
+    if (process.env.NODE_ENV === 'production') {
+        return res.status(200).json({ status: 'healthy' });
+    }
     res.status(200).json({
         status: 'healthy',
         timestamp: new Date().toISOString(),

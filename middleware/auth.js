@@ -47,9 +47,8 @@ const authenticateToken = async (req, res, next) => {
         }
 
         try {
-            // Verify session token in database
             const [users] = await db.query(
-                'SELECT session_token, session_created_at FROM users WHERE id = ?',
+                'SELECT session_token, session_created_at, role, email, department_id, is_active FROM users WHERE id = ?',
                 [user.id]
             );
 
@@ -77,6 +76,17 @@ const authenticateToken = async (req, res, next) => {
                     error: 'Session invalid. You have been logged out because you logged in from another device.',
                     loggedOutFromOtherDevice: true
                 });
+            }
+
+            // Check if account is still active
+            if (!dbUser.is_active) {
+                logSecurityEvent(EventTypes.UNAUTHORIZED_ACCESS, {
+                    reason: 'Account deactivated',
+                    userId: user.id,
+                    ip: req.ip,
+                    path: req.path
+                });
+                return res.status(403).json({ error: 'Account deactivated. Contact administrator.' });
             }
 
             // Check session timeout using UNIX_TIMESTAMP for timezone-safe comparison
@@ -118,8 +128,14 @@ const authenticateToken = async (req, res, next) => {
             );
             res.setHeader('X-Refreshed-Token', refreshedToken);
 
-            // Add user info to request
-            req.user = user;
+            // Use DB-sourced user data (not JWT claims) to prevent privilege escalation
+            req.user = {
+                id: user.id,
+                email: dbUser.email,
+                role: dbUser.role,
+                department_id: dbUser.department_id,
+                sessionToken: user.sessionToken
+            };
 
             // Validate session security (device fingerprinting)
             await validateSession(req, res, () => {

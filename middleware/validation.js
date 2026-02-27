@@ -119,7 +119,7 @@ const validatePaperUpload = [
         .isInt({ min: 1, max: 8 })
         .withMessage('Semester must be between 1 and 8'),
     body('paper_type')
-        .isIn(['MSE', 'ESE', 'Assignment', 'Tutorial', 'Other'])
+        .isIn(['MSE-1', 'MSE-2', 'ESE', 'Quiz', 'Assignment', 'Other'])
         .withMessage('Invalid paper type'),
     body('year')
         .isInt({ min: 2000, max: new Date().getFullYear() + 1 })
@@ -139,7 +139,7 @@ const validatePaperUpdate = [
         .withMessage('Semester must be between 1 and 8'),
     body('paper_type')
         .optional()
-        .isIn(['MSE', 'ESE', 'Assignment', 'Tutorial', 'Other'])
+        .isIn(['MSE-1', 'MSE-2', 'ESE', 'Quiz', 'Assignment', 'Other'])
         .withMessage('Invalid paper type'),
     body('year')
         .optional()

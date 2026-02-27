@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS papers (
     subject_id INT NOT NULL,
     department_id INT NOT NULL,
     semester INT NOT NULL,
-    paper_type ENUM('MSE', 'ESE', 'Quiz', 'Assignment', 'Other') NOT NULL,
+    paper_type ENUM('MSE-1', 'MSE-2', 'ESE', 'Quiz', 'Assignment', 'Other') NOT NULL,
     year INT NOT NULL,
     file_path VARCHAR(255) NOT NULL,
     original_filename VARCHAR(255) NOT NULL,

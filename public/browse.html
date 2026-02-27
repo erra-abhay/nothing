@@ -85,8 +85,29 @@
 
         <!-- Results -->
         <div id="resultsCount" class="text-muted mb-2"></div>
-        <div id="papersContainer" class="card-grid">
-            <div class="spinner"></div>
+        <div style="overflow-x: auto;">
+            <table class="data-table" id="papersTable" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>SUBJECT</th>
+                        <th>DEPARTMENT</th>
+                        <th>SEM</th>
+                        <th>TYPE</th>
+                        <th>YEAR</th>
+                        <th>UPLOADED BY</th>
+                        <th>DOWNLOADS</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody id="papersContainer">
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 2rem;">
+                            <div class="spinner"></div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </main>
 
@@ -94,6 +115,34 @@
     <script>
         let allDepartments = [];
         let allSubjects = [];
+
+        // Override displayPapers for table view
+        function displayPapers(papers, containerId) {
+            const container = document.getElementById(containerId);
+
+            if (!papers || papers.length === 0) {
+                container.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 2rem;" class="text-muted">No papers found</td></tr>';
+                return;
+            }
+
+            container.innerHTML = papers.map((paper, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td><strong>${paper.subject_name || '—'}</strong></td>
+                    <td>${paper.department_name || '—'}</td>
+                    <td>${paper.semester}</td>
+                    <td><span class="paper-badge">${paper.paper_type}</span></td>
+                    <td>${paper.year}</td>
+                    <td>${paper.uploaded_by || '—'}</td>
+                    <td>${paper.download_count !== undefined ? paper.download_count : 0}</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="downloadPaper(${paper.id}, '${(paper.subject_name || '').replace(/'/g, "\\'")}')">
+                            Download
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
 
         // Load departments
         async function loadDepartments() {

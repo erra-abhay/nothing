@@ -1,0 +1,19 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#8b5cf6" />
+    </linearGradient>
+  </defs>
+  
+  /* Outer Shield/Vault Shape */
+  <path d="M256 40L80 110V240C80 350 155 450 256 480C357 450 432 350 432 240V110L256 40Z" fill="url(#logo-gradient)" />
+  
+  /* Document Icon */
+  <path d="M300 160H190C178.954 160 170 168.954 170 180V332C170 343.046 178.954 352 190 352H322C333.046 352 342 343.046 342 332V202L300 160Z" fill="white" />
+  <path d="M300 160V202H342L300 160Z" fill="#e2e8f0" />
+  
+  /* Vault Lock Circle */
+  <circle cx="256" cy="275" r="25" fill="url(#logo-gradient)" />
+  <rect x="251" y="275" width="10" height="30" rx="2" fill="url(#logo-gradient)" />
+</svg>

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: papervault-config
+  namespace: papervault
+data:
+  DB_HOST: mysql-service
+  DB_USER: abhay
+  DB_NAME: PVBL
+  DB_PORT: "3306"
+  REDIS_URL: redis://redis-service:6379
+  PORT: "3000"
+  NODE_ENV: production
+  DOMAIN: devops.brikienlabs.tech
+  PROTOCOL: http
+  MAX_FILE_SIZE: "10485760"
+  HOSTNAME: 0.0.0.0

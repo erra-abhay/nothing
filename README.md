@@ -1,85 +1,36 @@
-# 📚 PaperVault by BRIKIEN LABS
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## College Question Paper Repository - Quick Reference
+## Getting Started
 
-### Admin Access
-- **URL**: http://localhost:3000/admin-login.html
-- **Email**: `admin@kitsw.ac.in`
-- **Password**: `admin123`
-
-> **⚠️ IMPORTANT**: Change the admin password after first login!
-
-### Faculty Access
-Faculty accounts must be created by admin first.
-- **URL**: http://localhost:3000/faculty-login.html
-
-## 🌐 Application URLs
-
-- **Homepage**: http://localhost:3000
-- **Browse Papers**: http://localhost:3000/browse.html
-- **Faculty Login**: http://localhost:3000/faculty-login.html
-- **Faculty Portal**: http://localhost:3000/faculty-portal.html
-- **Admin Login**: http://localhost:3000/admin-login.html
-- **Admin Panel**: http://localhost:3000/admin-panel.html
-
-## 🗄️ Database Info
-
-- **Database Name**: `question_paper_repo`
-- **MySQL User**: `root`
-- **MySQL Password**: (empty for local development)
-
-## 🚀 Running the Application
+First, run the development server:
 
 ```bash
-# Start the server
-cd /home/abhay/folder
-npm start
-
-# Server will run on http://localhost:3000
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-## 🔒 Security Features
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-✅ **Enhanced Security Headers** - XSS, Clickjacking, MIME sniffing protection  
-✅ **Rate Limiting** - 100 requests per minute per IP  
-✅ **File Upload Validation** - PDF and DOCX only with MIME type checking  
-✅ **Input Sanitization** - Path traversal and injection protection  
-✅ **JWT Authentication** - Secure token-based auth with 24h expiry  
-✅ **CORS Configuration** - Restricted origins in production  
-✅ **Error Handling** - Secure error messages, detailed logging  
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-See [SECURITY.md](file:///home/abhay/folder/SECURITY.md) for complete security documentation.
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## 📄 Supported File Types
+## Learn More
 
-- **PDF** (.pdf) - Standard question papers
-- **DOCX** (.docx, .doc) - Editable question papers
-- **Max Size**: 10MB per file
+To learn more about Next.js, take a look at the following resources:
 
-## 📝 Sample Data
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-**Departments (5):**
-- Computer Science (CS)
-- Information Technology (IT)
-- Electronics and Communication (EC)
-- Mechanical Engineering (ME)
-- Civil Engineering (CE)
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-**Subjects (8):**
-- Data Structures, DBMS, OS, Computer Networks (CS)
-- PPSC, Web Technologies, Software Engineering (IT)
-- PPSC is available in both CS and IT departments
+## Deploy on Vercel
 
-## 🎯 Quick Start Guide
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-1. **Access Admin Panel**: http://localhost:3000/admin-login.html
-2. **Create Faculty Account**: Use admin panel → Faculty tab → Add Faculty
-3. **Upload Papers**: Faculty logs in → Upload form → Select subject, semester, type, year, and PDF/DOCX
-4. **Public Access**: Students visit homepage → Search or browse → Download papers
-
-## 📚 Documentation
-
-- [SECURITY.md](file:///home/abhay/folder/SECURITY.md) - Complete security documentation
-- [Walkthrough](file:///home/abhay/.gemini/antigravity/brain/1d1671c1-9fba-4b92-949d-3f45f2b31075/walkthrough.md) - Detailed system walkthrough
-
-Enjoy your secure question paper repository! 📚🔒
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

@@ -1,37 +1,41 @@
 {
-  "name": "question-paper-repository",
-  "version": "1.0.0",
-  "description": "College Question Paper Repository System",
-  "main": "server.js",
+  "name": "papervault-nextjs",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
   },
-  "keywords": [
-    "education",
-    "question-papers",
-    "repository"
-  ],
-  "author": "",
-  "license": "MIT",
   "dependencies": {
-    "bcrypt": "^5.1.1",
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "express-mongo-sanitize": "^2.2.0",
-    "express-rate-limit": "^5.5.1",
-    "express-session": "^1.19.0",
-    "express-validator": "^6.15.0",
-    "file-type": "^16.5.4",
-    "helmet": "^4.6.0",
-    "hpp": "^0.2.3",
-    "jsonwebtoken": "^9.0.2",
-    "multer": "^1.4.5-lts.1",
-    "mysql2": "^3.6.5"
+    "@hookform/resolvers": "^5.2.2",
+    "bcrypt": "^6.0.0",
+    "clsx": "^2.1.1",
+    "file-type": "^21.3.4",
+    "framer-motion": "^12.38.0",
+    "ioredis": "^5.10.1",
+    "jose": "^6.2.2",
+    "jsonwebtoken": "^9.0.3",
+    "lucide-react": "^1.9.0",
+    "mysql2": "^3.22.2",
+    "next": "16.2.4",
+    "react": "19.2.4",
+    "react-dom": "19.2.4",
+    "react-hook-form": "^7.73.1",
+    "tailwind-merge": "^3.5.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "nodemon": "^3.0.2"
+    "@tailwindcss/postcss": "^4",
+    "@types/bcrypt": "^6.0.0",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }

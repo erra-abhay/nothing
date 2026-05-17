@@ -1,0 +1,85 @@
+version: '3.8'
+
+services:
+  # MySQL Database (Isolated & Secure)
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+      MYSQL_DATABASE: PVBL
+      MYSQL_USER: abhay
+      MYSQL_PASSWORD_FILE: /run/secrets/db_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - pv_internal
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+      resources:
+        limits:
+          memory: 1G
+
+  # Redis Stack (High Performance Search)
+  redis:
+    image: redis/redis-stack:latest
+    networks:
+      - pv_internal
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # Next.js Application (Scalable)
+  app:
+    image: papervault-app:latest
+    ports:
+      - "127.0.0.1:55516:3000"
+    environment:
+      NODE_ENV: production
+      DB_HOST: mysql
+      DB_USER: abhay
+      DB_PASSWORD_FILE: /run/secrets/db_password
+      DB_NAME: PVBL
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET_FILE: /run/secrets/jwt_secret
+      HOSTNAME: 0.0.0.0
+    secrets:
+      - db_password
+      - jwt_secret
+    volumes:
+      - uploads_data:/app/uploads
+      - logs_data:/app/logs
+    networks:
+      - pv_internal
+    deploy:
+      replicas: 2 # Starts with 2, script will scale up to 10
+      update_config:
+        parallelism: 1
+        delay: 10s
+      restart_policy:
+        condition: on-failure
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.10'
+          memory: 256M
+
+networks:
+  pv_internal:
+    driver: overlay
+
+volumes:
+  mysql_data:
+  uploads_data:
+  logs_data:
+
+secrets:
+  db_password:
+    external: true
+  db_root_password:
+    external: true
+  jwt_secret:
+    external: true

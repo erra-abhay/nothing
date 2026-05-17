@@ -1,36 +1,67 @@
-version: '3.8'
-
 services:
-  # MySQL Database
+  # MySQL Database (Optimized for High Concurrency)
   mysql:
     image: mysql:8.0
     container_name: qpr_mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-BrikienlabsL@12}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-admin123}
       MYSQL_DATABASE: ${DB_NAME:-PVBL}
       MYSQL_USER: ${DB_USER:-abhay}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-BrikienlabsL@12}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-admin123}
       TZ: Asia/Kolkata
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./config/schema.sql:/docker-entrypoint-initdb.d/schema.sql
-      #ports:
-      #- "127.0.0.1:${MYSQL_PORT:-32306}:3306"
+      - ./scripts/init.sql:/docker-entrypoint-initdb.d/schema.sql
     networks:
       - qpr_network
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD:-BrikienlabsL@12}" ]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD:-admin123}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Node.js Application
+  # Redis Stack (for RediSearch)
+  redis:
+    image: redis/redis-stack:latest
+    container_name: qpr_redis_stack
+    restart: unless-stopped
+    networks:
+      - qpr_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Next.js Application (SCALABLE Production Build)
   app:
     build:
       context: .
       dockerfile: Dockerfile
-    # container_name removed to allow: docker compose --profile with-nginx up -d --scale app=3
+    # No container_name here to allow: docker compose up -d --scale app=X
     restart: unless-stopped
     environment:
       NODE_ENV: ${NODE_ENV:-production}
@@ -40,36 +71,44 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-BrikienlabsL@12}
       DB_NAME: ${DB_NAME:-PVBL}
       DB_PORT: 3306
+      REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET}
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
       PROTOCOL: ${PROTOCOL:-http}
       DOMAIN: ${DOMAIN:-localhost}
       TZ: Asia/Kolkata
+      HOSTNAME: 0.0.0.0
+      NEXT_TELEMETRY_DISABLED: 1
     volumes:
       - uploads_data:/app/uploads
       - logs_data:/app/logs
-      #ports:
-      #- "${APP_PORT:-55516}:3000"
     networks:
       - qpr_network
     depends_on:
       mysql:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
-      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})" ]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/public/papers', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
       interval: 30s
-      timeout: 3s
+      timeout: 5s
       retries: 3
 
-  # Nginx (Optional - for HTTPS in future)
+  # Nginx (Secure Internal Entry Point)
   nginx:
     image: nginx:alpine
     container_name: qpr_nginx
     restart: unless-stopped
     ports:
-      #- "${HTTP_PORT:-80}:80"
-      #- "${HTTPS_PORT:-443}:443"
       - "127.0.0.1:55516:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
@@ -80,9 +119,15 @@ services:
       - app
     profiles:
       - with-nginx
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   qpr_network:
+    name: qpr_network
     driver: bridge
 
 volumes:

@@ -2,7 +2,7 @@
 
 #CONTAINER START WITH NGINX COMMAND
 
-echo "==========================================================STARTING CONTAINERS========================================================="
+echo "==========================================================STARTING CONTAINERS======================================================================"
 
 # Ensure required SSL directory exists
 mkdir -p nginx/ssl

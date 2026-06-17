@@ -26,8 +26,5 @@ jobs:
       - name: ✅ Health check
         run: |
          sleep 3
-          - name: ✅ Health check
-  run: |
-    sleep 3
-    docker ps --format "table {{.Names}}\t{{.Status}}"
-    echo "✅ Deployed at $(date)"
+          docker ps --format "table {{.Names}}\t{{.Status}}"
+          echo "✅ Deployed at $(date)"

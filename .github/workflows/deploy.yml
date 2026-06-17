@@ -1,4 +1,4 @@
-name: 🚀 Deploy to Production
+name:  Deploy to Production
 
 on:
   push:
@@ -11,20 +11,30 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - name: 📦 Pull latest code
+      - name:  Pull latest code
         run: |
           cd ~/nothing
           git fetch origin main
           git reset --hard origin/main
 
-      - name: 🎨 build the contianers
+      - name:  build the contianers
         run: |
           cd ~/nothing
-          docker compose --profile with-nginx up -d
-          docker compose --profile with-nginx up -d --no-deps --force-recreate
+          
+          echo " Building the containers..."
 
-      - name: ✅ Health check
+          docker compose --profile with-nginx build --no-cache
+
+          echo " Containers built successfully."
+          
+          docker compose --profile with-nginx up -d --remove-orphans
+
+          docker image prune -f
+          
+          echo " Containers deployed successfully."
+
+      - name:  Health check
         run: |
          sleep 3
           docker ps --format "table {{.Names}}\t{{.Status}}"
-          echo "✅ Deployed at $(date)"
+          echo " Deployed at $(date)"

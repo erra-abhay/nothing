@@ -6,7 +6,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy to HPE Server
+    name: CI
     runs-on: self-hosted
     timeout-minutes: 15
 

@@ -25,6 +25,5 @@ jobs:
 
       - name: ✅ Health check
         run: |
-          sleep 3
-          docker ps --format "table {{.Names}}\t{{.Status}}" | grep qpr | grep nothing
-          echo "✅ Deployed at $(date)"
+         sleep 3
+          docker ps --format "table {{.Names}}\t{{.Status}}" | grep qpr | grep nothing; echo "✅ Deployed at $(date)"

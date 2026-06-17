@@ -109,7 +109,7 @@ services:
     container_name: qpr_nginx
     restart: unless-stopped
     ports:
-      - "127.0.0.1:55516:80"
+      - "0.0.0.0:55516:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/nginx/ssl:ro

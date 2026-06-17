@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: 📦 Pull latest code
         run: |
-          cd ~/nothing
+          cd ~/cert-verify
           git fetch origin main
           git reset --hard origin/main
 
